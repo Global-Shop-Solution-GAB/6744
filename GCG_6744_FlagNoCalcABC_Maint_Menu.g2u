@@ -1,0 +1,400 @@
+﻿Program.Sub.ScreenSU.Start
+Gui.F_Maint..Create(BaseForm)
+Gui.F_Maint..Caption("Mass Update INV Part Flag")
+Gui.F_Maint..Size(308,401)
+Gui.F_Maint..MinX(0)
+Gui.F_Maint..MinY(0)
+Gui.F_Maint..Position(0,0)
+Gui.F_Maint..AlwaysOnTop(False)
+Gui.F_Maint..FontName("Tahoma")
+Gui.F_Maint..FontSize(8.25)
+Gui.F_Maint..ControlBox(True)
+Gui.F_Maint..MaxButton(True)
+Gui.F_Maint..MinButton(True)
+Gui.F_Maint..MousePointer(0)
+Gui.F_Maint..Moveable(True)
+Gui.F_Maint..Sizeable(True)
+Gui.F_Maint..ShowInTaskBar(True)
+Gui.F_Maint..TitleBar(True)
+Gui.F_Maint..Event(UnLoad,F_Maint_UnLoad)
+Gui.F_Maint.ddlPL.Create(DropDownList)
+Gui.F_Maint.ddlPL.Enabled(True)
+Gui.F_Maint.ddlPL.Visible(True)
+Gui.F_Maint.ddlPL.Zorder(0)
+Gui.F_Maint.ddlPL.Size(100,20)
+Gui.F_Maint.ddlPL.Position(13,29)
+Gui.F_Maint.ddlPL.FontName("Tahoma")
+Gui.F_Maint.ddlPL.FontSize(8.25)
+Gui.F_Maint.ddlPL.Event(Change,ddlPL_Change)
+Gui.F_Maint.lblPL.Create(Label,"Product Line Start",True,86,13,0,20,11,True,0,"Tahoma",8.25,,0,0)
+Gui.F_Maint.lblPL.BorderStyle(0)
+Gui.F_Maint.chkNOABC.Create(CheckBox)
+Gui.F_Maint.chkNOABC.Enabled(True)
+Gui.F_Maint.chkNOABC.Visible(True)
+Gui.F_Maint.chkNOABC.Zorder(0)
+Gui.F_Maint.chkNOABC.Size(112,20)
+Gui.F_Maint.chkNOABC.Position(13,60)
+Gui.F_Maint.chkNOABC.Caption("Do Not Calc ABC")
+Gui.F_Maint.chkNOABC.FontName("Tahoma")
+Gui.F_Maint.chkNOABC.FontSize(8.25)
+Gui.F_Maint.cmdok.Create(Button)
+Gui.F_Maint.cmdok.Enabled(True)
+Gui.F_Maint.cmdok.Visible(True)
+Gui.F_Maint.cmdok.Zorder(0)
+Gui.F_Maint.cmdok.Size(44,23)
+Gui.F_Maint.cmdok.Position(136,58)
+Gui.F_Maint.cmdok.Caption("OK")
+Gui.F_Maint.cmdok.FontName("Tahoma")
+Gui.F_Maint.cmdok.FontSize(8.25)
+Gui.F_Maint.cmdok.Event(Click,cmdok_Click)
+Gui.F_Maint.gsgcPL.Create(GsGridControl)
+Gui.F_Maint.gsgcPL.Enabled(True)
+Gui.F_Maint.gsgcPL.Visible(True)
+Gui.F_Maint.gsgcPL.Zorder(0)
+Gui.F_Maint.gsgcPL.Size(299,275)
+Gui.F_Maint.gsgcPL.Position(4,91)
+Gui.F_Maint.gsgcPL.Event(RowCellClick,gsgcPL_RowCellClick)
+Gui.F_Maint.gsgcPL.Anchor(15)
+Gui.F_Maint.ddlPL2.Create(DropDownList)
+Gui.F_Maint.ddlPL2.Enabled(True)
+Gui.F_Maint.ddlPL2.Visible(True)
+Gui.F_Maint.ddlPL2.Zorder(0)
+Gui.F_Maint.ddlPL2.Size(100,20)
+Gui.F_Maint.ddlPL2.Position(137,29)
+Gui.F_Maint.ddlPL2.FontName("Tahoma")
+Gui.F_Maint.ddlPL2.FontSize(8.25)
+Gui.F_Maint.ddlPL2.Event(Change,ddlPL2_Change)
+Gui.F_Maint.lblPL2.Create(Label,"Product Line End",True,80,13,0,139,11,True,0,"Tahoma",8.25,,0,0)
+Gui.F_Maint.lblPL2.BorderStyle(0)
+Gui.F_Maint.lbldash.Create(Label,"-",True,4,13,0,124,33,True,0,"Tahoma",8.25,,0,0)
+Gui.F_Maint.lbldash.BorderStyle(0)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Quote:13402-0
+'MIBA INDUSTRIAL BEARINGS U.S. (HOUSTON), LLC.
+'Sam Stanka -5/12/22
+'The customer would like a project to quickly toggle Do Not Calc ABC in the Inventory Master based on product line. Additionally, they would like this checked automatically upon part creation if the product line matches one in a maintenance table.
+
+Function.Intrinsic.UI.UsePixels ' Allows you to use Pixels instead of Twips throughout
+F.Intrinsic.Control.Try
+	V.local.sError.Declare
+	F.ODBC.Connection!con.OpenCompanyConnection
+	
+	'Check on the save hook on the INV Master screen for PL and set the Value of the DO_NOT_CALC_ABC for that part respectively.
+	'Hook 10170 (Pre-save)
+	F.Intrinsic.Control.If(V.Caller.Hook,=,10170)
+		F.Intrinsic.Control.CallSub(CheckPartPL)
+		F.Intrinsic.Control.CallSub(F_Maint_UnLoad)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.CallSub("FillProductLineDDL")
+	F.Intrinsic.Control.CallSub("LoadDt")
+	Gui.F_Maint..Show
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.CheckPartPL.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+V.Local.sSQL.Declare
+V.Local.sPL.Declare
+V.Local.sNoCalc.Declare
+V.Local.sInactive.Declare
+
+'From Hook 10170
+'No Calc ABC
+V.Local.sNoCalc.Set(V.Passed.000106)
+V.Local.sPL.Set(V.Passed.000011)
+
+'Only want to edit the No Calc ABC flag to turn it on. We will not control turning it off from this screen  
+F.Intrinsic.Control.If(V.Local.sNoCalc,<>,"Y")
+	F.Intrinsic.String.Build("Select DO_NOT_CALC_ABC From GCG_6744_PL_ABC_FLAG where PROD_LINE = '{0}'",V.Local.sPL.PSQLFriendly,V.Local.sSQL)
+	F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sSQL)
+	F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+		F.Intrinsic.Control.If(V.Local.sSQL,=,"Y")
+			V.Passed.000106.Set("Y")
+			'Clear the ABC Code
+			V.Passed.000020.Set("")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+
+'If the inactive flag is true, set the DNC ABC flag and Clear the ABC Code.
+V.Local.sInactive.Set(V.Passed.000148)
+F.Intrinsic.Control.If(V.Local.sInactive,=,"Y")
+	V.Passed.000106.Set("Y")
+	'Clear the ABC Code
+	V.Passed.000020.Set("")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+
+F.Intrinsic.Control.EndTry
+Program.Sub.CheckPartPL.End
+
+Program.Sub.FillProductLineDDL.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+
+'Adding blank PL
+gui.F_Maint.ddlPL.AddItem("")
+gui.F_Maint.ddlPL2.AddItem("")
+
+'Adding PLs from PL_MASTER to both DDLs
+F.Data.Datatable.CreateFromSQL("dtPL","con","Select RTRIM(PROD_LINE) as PROD_LINE from PL_MASTER order by PROD_LINE")
+gui.F_Maint.ddlPL.AddItems("DataTable","dtPL","PROD_LINE","PROD_LINE")
+gui.F_Maint.ddlPL2.AddItems("DataTable","dtPL","PROD_LINE","PROD_LINE")
+F.Data.Datatable.Close("dtPL")
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.FillProductLineDDL.End
+
+Program.Sub.LoadDt.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+Gui.F_Maint.gsgcPL.SuspendLayout
+
+F.Intrinsic.Control.If(V.DataTable.dtPLData.Exists)
+	F.Data.DataTable.Close("dtPLData")
+F.Intrinsic.Control.EndIf
+
+F.Data.DataTable.CreateFromSQL("dtPLData","con","Select PROD_LINE, CAST(IF(DO_NOT_CALC_ABC = 'Y',1,0) as BIT) as DO_NOT_CALC_ABC From GCG_6744_PL_ABC_FLAG",True)
+
+gui.F_Maint.gsgcPL.AddGridviewFromDatatable("gvPLData","dtPLData")
+gui.F_Maint.gsgcPL.SetGridviewProperty("gvPLData","EnableAppearanceOddRow",True)
+gui.F_Maint.gsgcPL.SetGridviewProperty("gvPLData","OptionsViewColumnAutoWidth",True)
+Gui.F_Maint.gsgcPL.SetGridviewProperty("gvPLData","OptionsViewShowGroupPanel",False)
+Gui.F_Maint.gsgcPL.SetGridviewProperty("gvPLData","OptionsDetailShowDetailTabs",False)
+
+'PROD_LINE
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","PROD_LINE",V.Enum.ColumnPropertyNames!ReadOnly,True)
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","PROD_LINE",V.Enum.ColumnPropertyNames!AllowEdit,False)
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","PROD_LINE",V.Enum.ColumnPropertyNames!Caption,"Product Line")
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","PROD_LINE",V.Enum.ColumnPropertyNames!MinWidth,60)
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","PROD_LINE",V.Enum.ColumnPropertyNames!HeaderFontBold,True)
+
+'DO_NOT_CALC_ABC
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","DO_NOT_CALC_ABC",V.Enum.ColumnPropertyNames!ReadOnly,True)
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","DO_NOT_CALC_ABC",V.Enum.ColumnPropertyNames!AllowEdit,False)
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","DO_NOT_CALC_ABC",V.Enum.ColumnPropertyNames!Caption,"Do Not Calc ABC")
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","DO_NOT_CALC_ABC",V.Enum.ColumnPropertyNames!MinWidth,60)
+Gui.F_Maint.gsgcPL.SetColumnProperty("gvPLData","DO_NOT_CALC_ABC",V.Enum.ColumnPropertyNames!HeaderFontBold,True)
+
+Gui.F_Maint.gsgcPL.ResumeLayout
+
+Gui.F_Maint.gsgcPL.MainView("gvPLData")
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.LoadDt.End
+
+
+Program.Sub.ddlPL_Change.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+V.Local.sPL.Declare
+V.Local.sSQL.Declare
+V.Local.sRet.Declare
+
+V.Local.sPL.Set(v.Screen.F_Maint!ddlPL.Text)
+
+Gui.F_Maint.ddlPL2.Text(V.Local.sPL)
+
+'Add a check here for if the PL is in the custom table as true or false
+F.Intrinsic.String.Build("Select DO_NOT_CALC_ABC From GCG_6744_PL_ABC_FLAG where PROD_LINE = '{0}'",V.Local.sPL.PSQLFriendly,V.Local.sSQL)
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+F.Intrinsic.Control.AndIf(V.Local.sRet,=,"Y")
+	Gui.F_Maint.chkNOABC.Value(True)
+F.Intrinsic.Control.Else
+	Gui.F_Maint.chkNOABC.Value(False)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.ddlPL_Change.End
+
+Program.Sub.ddlPL2_Change.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+
+F.Intrinsic.Control.If(V.Screen.F_Maint!ddlPL2.Text,=,"",or,V.Screen.F_Maint!ddlPL.Text,=,"")
+	gui.F_Maint.ddlPL.Text("")
+F.Intrinsic.Control.EndIf
+Gui.F_Maint.chkNOABC.Value(False)
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.ddlPL2_Change.End
+
+Program.Sub.F_Maint_UnLoad.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+
+F.Intrinsic.Control.If(V.ODBC.con.exists)
+	F.ODBC.Connection!con.Close
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.If(V.DataTable.dtPLData.Exists)
+	F.Data.DataTable.Close("dtPLData")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.End()
+
+F.Intrinsic.Control.EndTry
+Program.Sub.F_Maint_UnLoad.End
+
+Program.Sub.cmdok_Click.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+v.Local.bChecked.Declare
+V.Local.sPL.Declare
+V.Local.sPL2.Declare
+v.Local.sMsg.Declare
+V.Local.iRet.Declare
+v.Local.sSQL.Declare
+V.Local.sRet.Declare
+V.Local.sRet2.Declare
+V.Local.bPLSame.Declare
+V.Local.iCnt.Declare
+V.Local.sChecked.Declare
+
+V.Local.sPL.Set(v.Screen.F_Maint!ddlPL.Text)
+V.Local.sPL2.Set(v.Screen.F_Maint!ddlPL2.Text)
+
+V.Local.bChecked.Set(V.Screen.F_Maint!chkNOABC.CheckedAsBoolean)
+F.Intrinsic.Control.If(V.Local.bChecked)
+	V.Local.sChecked.Set("Y")
+F.Intrinsic.Control.Else
+	V.Local.sChecked.Set("N")
+F.Intrinsic.Control.EndIf
+
+'Asking if they actually want to update INV part flag
+F.Intrinsic.String.Build("Are you sure you want to update 'Do No Calc ABC Flag' to {0} for all Parts on PLs {1} - {2}{3}This will also clear any ABC codes for those Parts.",V.Local.bChecked,V.Local.sPL,V.Local.sPL2,v.Ambient.NewLine,v.Local.sMsg)
+F.Intrinsic.UI.Msgbox(v.Local.sMsg,,4,V.Local.iRet)
+F.Intrinsic.Control.If(V.Local.iRet,<>,6)
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.BlockEvents
+
+'Checking if PL 1 and 2 are the same
+f.Intrinsic.Control.If(V.Local.sPL.Trim,=,V.Local.sPL2.Trim)
+	V.Local.bPLSame.Set(True)
+f.Intrinsic.Control.EndIf
+
+
+'Grabbing full list of PLs from PL_MASTER
+F.Intrinsic.String.Build("Select PROD_LINE From PL_MASTER Where PROD_LINE Between '{0}' and '{1}'",V.Local.sPL.PSQLFriendly,v.Local.sPL2.PSQLFriendly,v.Local.sSQL)
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+	F.Intrinsic.String.Split(V.Local.sRet,"#$#",V.Local.sRet)
+F.Intrinsic.Control.EndIf
+
+'Update custom table to Hold Boolean value for each PL, insert if not already in the table.
+F.Intrinsic.Control.For(V.Local.iCnt,0,v.Local.sRet.UBound,1)
+	F.Intrinsic.String.Build("Select 1 from GCG_6744_PL_ABC_FLAG where PROD_LINE = '{0}'",V.Local.sRet(V.Local.iCnt),V.Local.sSQL)
+	F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet2)
+	F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+		F.Intrinsic.String.Build("Insert into GCG_6744_PL_ABC_FLAG (PROD_LINE, DO_NOT_CALC_ABC) Values ('{0}','{1}')",V.Local.sRet(V.Local.iCnt),V.Local.sChecked,V.Local.sSQL)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Build("Update GCG_6744_PL_ABC_FLAG set DO_NOT_CALC_ABC = '{1}' where PROD_LINE = '{0}'",V.Local.sRet(V.Local.iCnt),V.Local.sChecked,V.Local.sSQL)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.Next(v.Local.iCnt)
+
+'Update the INVENTORY_MST3.DO_NOT_CALC_ABC Flag based on PL
+F.Intrinsic.String.Build("Update INVENTORY_MST3 Set DO_NOT_CALC_ABC = '{0}' where Part+'-'+Location in (select Part+'-'+Location from INVENTORY_MSTR where PRODUCT_LINE Between '{1}' and '{2}')",v.Local.sChecked,V.Local.sPL.PSQLFriendly,V.Local.sPL2.PSQLFriendly,V.Local.sSQL)
+F.ODBC.Connection!con.Execute(V.Local.sSQL)
+
+
+F.Intrinsic.Control.If(V.Local.bChecked)
+	F.Intrinsic.String.Build("Update INVENTORY_MSTR Set CODE_ABC = '' where PRODUCT_LINE Between '{0}' and '{1}'",V.Local.sPL.PSQLFriendly,V.Local.sPL2.PSQLFriendly,V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.UnBlockEvents
+'Refresh Grid
+F.Intrinsic.Control.CallSub("LoadDt")
+
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdok_Click.End
+
+Program.Sub.gsgcPL_RowCellClick.Start
+F.Intrinsic.Control.Try
+V.local.sError.Declare
+V.Local.sPL.Declare
+V.Local.bVal.Declare
+
+F.Intrinsic.Control.SelectCase(V.Args.Column.UCase)
+	F.Intrinsic.Control.Case("DO_NOT_CALC_ABC")
+		Gui.F_Maint.gsgcPL.GetCellValueByColumnName("gvPLData","PROD_LINE",V.Args.RowIndex,V.Local.sPL)
+		Gui.F_Maint.gsgcPL.GetCellValueByColumnName("gvPLData","DO_NOT_CALC_ABC",V.Args.RowIndex,V.Local.bVal)
+		Gui.F_Maint.ddlPL.Text(V.Local.sPL.Trim)
+		Gui.F_Maint.ddlPL2.Text(V.Local.sPL.Trim)
+		Gui.F_Maint.chkNOABC.Value(V.Local.bVal)
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.Catch
+	
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} at {6} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Ambient.CurrentSubroutine, V.Ambient.ErrorNumber, V.Ambient.ErrorDescription, V.Ambient.GABVersion, V.Ambient.Now, V.local.sError)
+	F.Intrinsic.UI.Msgbox(V.local.sError)
+	F.Intrinsic.Control.CallSub("F_Maint_UnLoad")
+	
+F.Intrinsic.Control.EndTry
+Program.Sub.gsgcPL_RowCellClick.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$sstanka$}$20220601093702733$}$mP+zz5Tw3sT2/nyap+FbWm4triMPqjXDGWEE8Ih8F8V8K4FNKgjNHQTp141WlFUN0AfhHeppdD4=
+Program.Sub.Comments.End
